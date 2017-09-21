@@ -1,0 +1,8 @@
+{
+  "short_name": "tfpractice Merlin Guides Challenge",
+  "name": "tfpractice Merlin Guides Challenge",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
