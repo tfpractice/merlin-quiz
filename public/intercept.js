@@ -1,44 +1,62 @@
-// this will be a collection of all native XHRs made from the page
-const requests = [];
 const totoroURL =
   'https://ghibliapi.herokuapp.com/films/58611129-2dbc-4a81-a72f-77ddfc1b1b49';
 
 window.addEventListener('load', applyClickHandler);
 
-// this script will monkeyPatch the native XMLHttpRequest prototype method to
-// add the object to the requests array // object to alert us of all requests
+// this will be a collection of all native XHRs made from the page
+const requests = [];
 
+// this script will monkeyPatch the native XMLHttpRequest prototype method to
+// add the object to the requests array
 (function patchOpen(openNative) {
   XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
-    // this.onreadystatechange = isPageReady(intercept_ready);
-    console.log('this', this);
+    const currReqObj = this;
+
+    hookReadyState(currReqObj);
 
     // console.log('this.onreadystatechange', this.onreadystatechange);
-    requests.push(this);
+
+    requests.push(currReqObj);
 
     // call the native send()
-    openNative.apply(this, [ method, url, async, user, password, ]);
-    this.onreadystatechange = isPageReady(intercept_ready);
-    console.log('this', this);
-    console.log('this.onreadystatechange', this.onreadystatechange);
+    openNative.apply(currReqObj, [ method, url, async, user, password, ]);
+
+    // currReqObj.onreadystatechange = isPageReady(intercept_ready);
+
+    // console.log('currReqObj.onreadystatechange', currReqObj.onreadystatechange);
   };
 }(XMLHttpRequest.prototype.open));
 
+// this declares that the page is ready
 function intercept_ready() {
   alert('intercept_ready.js: readyToBegin!');
 }
+
+// this checks if an individual request object is complete
 function requestDone(req) {
   return req.readyState === '4';
 }
+
+// this takes every request object and checks if it status
+// is done, implying that no requests are being made
 function checkReqs() {
+  console.log('requests done', requests.every(requestDone));
   return requests.every(requestDone);
 }
+
+// this function is run on every request and calls a callback in the case
+// that all requests are complete, and no ajax requests are taking place
 function isPageReady(cb) {
   checkReqs() && cb();
 }
+
+// this hooks into the onreadystatechange property of each request
+// and checks if the page is ready after each requst is sent
 function hookReadyState(xhr) {
   const assigned = xhr.onreadystatechange;
 
+  console.log('xhr', xhr);
+  console.log('assigned', assigned);
   if (assigned instanceof Function) {
     xhr.onreadystatechange = function(e) {
       assigned(e);
@@ -57,17 +75,13 @@ function callMovie() {
   xhr.open(method, totoroURL);
   xhr.onreadystatechange = function() {
     if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-      console.log(xhr.responseText);
       addMovieInfo(JSON.parse(xhr.responseText));
     }
   };
   xhr.send();
-  console.log('requests', requests);
 }
 
 function addMovieInfo(info) {
-  console.log('info', info);
-
   // create a new button element & give it some content
   const newPara = document.createElement('p');
   const title = info.title;
@@ -75,14 +89,12 @@ function addMovieInfo(info) {
   const release_date = info.release_date;
   const infoArray = [ title, director, release_date, ];
 
-  console.log('infoArray', infoArray);
   const infoList = document.createElement('ul');
   const currentDiv = document.getElementById('interceptDiv');
 
   infoArray.forEach((t) => {
-    console.log('t', t);
     const item = document.createElement('li');
-    const newContent = document.createTextNode('t');
+    const newContent = document.createTextNode(t);
 
     item.appendChild(newContent);
     infoList.appendChild(item);
