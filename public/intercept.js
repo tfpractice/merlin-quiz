@@ -1,6 +1,3 @@
-const totoroURL =
-  'https://ghibliapi.herokuapp.com/films/58611129-2dbc-4a81-a72f-77ddfc1b1b49';
-
 window.addEventListener('load', applyClickHandler);
 
 // this will be a collection of all native XHRs made from the page
@@ -9,21 +6,16 @@ const requests = [];
 // this script will monkeyPatch the native XMLHttpRequest prototype method to
 // add the object to the requests array
 (function patchOpen(openNative) {
+  // reset the prototype method to hook into the instance method of each new request
   XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
     const currReqObj = this;
 
     hookReadyState(currReqObj);
 
-    // console.log('this.onreadystatechange', this.onreadystatechange);
-
+    // add the request to the requests array
     requests.push(currReqObj);
 
-    // call the native send()
     openNative.apply(currReqObj, [ method, url, async, user, password, ]);
-
-    // currReqObj.onreadystatechange = isPageReady(intercept_ready);
-
-    // console.log('currReqObj.onreadystatechange', currReqObj.onreadystatechange);
   };
 }(XMLHttpRequest.prototype.open));
 
@@ -33,14 +25,14 @@ function intercept_ready() {
 }
 
 // this checks if an individual request object is complete
+// used double equals for maximum type coercion
 function requestDone(req) {
-  return req.readyState === '4';
+  return req.readyState == '4';
 }
 
 // this takes every request object and checks if it status
 // is done, implying that no requests are being made
 function checkReqs() {
-  console.log('requests done', requests.every(requestDone));
   return requests.every(requestDone);
 }
 
@@ -55,10 +47,8 @@ function isPageReady(cb) {
 function hookReadyState(xhr) {
   const assigned = xhr.onreadystatechange;
 
-  console.log('xhr', xhr);
-  console.log('assigned', assigned);
   if (assigned instanceof Function) {
-    xhr.onreadystatechange = function(e) {
+    xhr.onreadystatechange = function hookState(e) {
       assigned(e);
       isPageReady(intercept_ready)(e);
     };
@@ -67,13 +57,15 @@ function hookReadyState(xhr) {
   }
 }
 
+// this is a sample XHR to a publc movie api, just to check if every thing works properly, it does
 function callMovie() {
   let xhr = new XMLHttpRequest(),
   method = 'GET',
-  url = 'https://developer.mozilla.org/';
+  totoroURL =
+      'https://ghibliapi.herokuapp.com/films/58611129-2dbc-4a81-a72f-77ddfc1b1b49';
 
   xhr.open(method, totoroURL);
-  xhr.onreadystatechange = function() {
+  xhr.onreadystatechange = function totoReq() {
     if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
       addMovieInfo(JSON.parse(xhr.responseText));
     }
@@ -81,6 +73,7 @@ function callMovie() {
   xhr.send();
 }
 
+// updates the DOM with xhr responseText
 function addMovieInfo(info) {
   // create a new button element & give it some content
   const newPara = document.createElement('p');
@@ -100,8 +93,10 @@ function addMovieInfo(info) {
     infoList.appendChild(item);
   });
 
-  // add the text node to the newly created div.
   currentDiv.appendChild(infoList);
+
+  // everytime the dom is updated, the requests array updates
+  console.log('requests', requests);
 }
 
 function applyClickHandler() {
