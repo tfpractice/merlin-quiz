@@ -3,22 +3,6 @@ window.addEventListener('load', applyClickHandler);
 // this will be a collection of all native XHRs made from the page
 const requests = [];
 
-// this script will monkeyPatch the native XMLHttpRequest prototype method to
-// add the object to the requests array
-(function patchOpen(openNative) {
-  // reset the prototype method to hook into the instance method of each new request
-  XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
-    const currReqObj = this;
-
-    hookReadyState(currReqObj);
-
-    // add the request to the requests array
-    requests.push(currReqObj);
-
-    openNative.apply(currReqObj, [ method, url, async, user, password, ]);
-  };
-}(XMLHttpRequest.prototype.open));
-
 // this declares that the page is ready
 function intercept_ready() {
   alert('intercept_ready.js: readyToBegin!');
@@ -41,6 +25,22 @@ function checkReqs() {
 function isPageReady(cb) {
   checkReqs() && cb();
 }
+
+// this script will monkeyPatch the native XMLHttpRequest prototype method to
+// add the object to the requests array
+(function patchOpen(openNative) {
+  // reset the prototype method to hook into the instance method of each new request
+  XMLHttpRequest.prototype.open = function(method, url, async, user, password) {
+    const currReqObj = this;
+
+    hookReadyState(currReqObj);
+
+    // add the request to the requests array
+    requests.push(currReqObj);
+
+    openNative.apply(currReqObj, [ method, url, async, user, password, ]);
+  };
+}(XMLHttpRequest.prototype.open));
 
 // this hooks into the onreadystatechange property of each request
 // and checks if the page is ready after each requst is sent
